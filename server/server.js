@@ -63,6 +63,28 @@ if (appointmentExists) {
     });
 }); 
 
+app.delete("/appointments/:id", (req, res) => {
+
+    const id = Number(req.params.id);
+
+    const index = appointments.findIndex((appointment) => {
+        return appointment.id === id;
+    });
+
+    if (index === -1) {
+        return res.status(404).json({
+            message: "Appointment not found."
+        });
+    }
+
+    appointments.splice(index, 1);
+
+    res.json({
+        message: "Appointment deleted successfully!"
+    });
+
+});
+
 app.listen(PORT, () => {
     console.log(`Server is now running on http://localhost:${PORT}`);
 })

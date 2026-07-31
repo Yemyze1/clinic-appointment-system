@@ -11,16 +11,18 @@ function App() {
   const [appointments, setAppointments] = useState([]);
 
     function loadAppointments() {
-  fetch("http://localhost:5000/appointments")
-    .then((response) => response.json())
-    .then((data) => { console.log(data);
-      setAppointments(data);
-    });
-    };
+     fetch("http://localhost:5000/appointments")
+      .then((response) => response.json())
+      .then((data) => { console.log(data);
+        setAppointments(data);
+      });
+  };
 
 useEffect(() => { 
+  loadAppointments();
 }, [])
   
+// handles the submission of the appointment form
   function handleSubmit(event) {
 
           event.preventDefault();
@@ -67,6 +69,19 @@ useEffect(() => {
 
   })};
 
+// handles the deletion of an appointment by its ID
+  function handleDelete(id) {
+
+  fetch(`http://localhost:5000/appointments/${id}`, {
+    method: "DELETE",
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      setMessage(data.message);
+      loadAppointments();
+    });
+
+}
   return (
     <div style={{ padding: "20px", fontFamily: "Arial", color: "ash" }}>
       <h1 style={{color: "white"}}>Clinic Appointment System</h1>
@@ -133,6 +148,11 @@ useEffect(() => {
     <p><strong>Department:</strong> {appointment.department}</p>
     <p><strong>Date:</strong> {appointment.date}</p>
     <p><strong>Time:</strong> {appointment.time}</p>
+
+    <button onClick={() => handleDelete(appointment.id)}>
+  Delete
+</button>
+
     <hr />
   </div>
 ))}
