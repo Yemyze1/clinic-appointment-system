@@ -45,25 +45,33 @@ app.get("/appointments", async (req, res) => {
     }
 });
 
-// This is a temporary list of appointments stored in the server memory
-const appointments = [
-    { id: 1,
-         name: "John Doe",
-        department: "Dental",
-        date: "2026-07-30",
-        time: "10:00 AM"
-    },
-    { id: 2,
-        name: "Mary Jane",
-        department: "Eye Clinic",
-        date: "2026-07-30",
-        time: "11:00 AM"
-    },
-];
+
 
 // This route creates a new appointment when the form is submitted
-app.post("/appointments", async(req, res) => {
+app.post("/appointments", async (req, res) => {
     try {
+
+// check that all required appointment details are provided in the request body
+    if
+     (!req.body.name ||
+         !req.body.department || 
+         !req.body.date || 
+         !req.body.time) {
+        return res.status(400).json({
+            message : "All appointment details are required."
+        });
+    }
+    
+    // This prevents users from booking appointments in the past
+    const today = new Date().toISOString().split("T")[0];
+
+    // This checks if the date in the request body is less than today's date
+    if (req.body.date < today) {
+        // If the date is in the past, send a 400 Bad Request response with an error message
+        return res.status(400).json({
+            message: "You cannot book an appointment for a past date."
+        });
+    }
 
     const appointmentExists = await Appointment.findOne({
         date: req.body.date,
@@ -97,29 +105,10 @@ app.post("/appointments", async(req, res) => {
     });
     };
 
-    // Check if the same date and time is already booked
-    const appointmentExists = appointments.find((appointment) => {
-        return (
-            appointment.date === newAppointment.date &&
-        appointment.time === newAppointment.time
-    );
-});
+    
 
-// If that time slot is already taken, do not allow the booking
-if (appointmentExists) {
-    return res.status(400).json({
-        message: "This appointment slot is already booked."
-    });
-}
 
-    // Add the new appointment to the list
-    appointments.push(newAppointment);
-
-    // Tell the client the booking was successful
-    res.status(201).json({
-        message: "Appointment booked successfully!",
-        appointment: newAppointment,
-    });
+   
 }); 
 
 // This route deletes an appointment using the ID in the URL
@@ -152,62 +141,80 @@ try {
 }
 });
 
+
 // This route updates an appointment using the ID in the URL
 app.put("/appointments/:id", async (req, res) => {
 
-        try {
+    try {
 
-    const updatedAppointment = await Appointment.findByIdAndUpdate(
+        // Check that all required appointment details are provided
+        if (
+            !req.body.name ||
+            !req.body.department ||
+            !req.body.date ||
+            !req.body.time
+        ) {
+            return res.status(400).json({
+                message: "All appointment details are required."
+            });
+        }
 
-    req.params.id,
+        // Prevent updating an appointment to a past date
+        const today = new Date().toISOString().split("T")[0];
 
-        {
+        if (req.body.date < today) {
+            return res.status(400).json({
+                message: "You cannot book an appointment for a past date."
+            });
+        }
 
-        name: req.body.name,
+        // Check whether another appointment already uses this date and time
+        const appointmentExists = await Appointment.findOne({
+            date: req.body.date,
+            time: req.body.time,
+            _id: { $ne: req.params.id }
+        });
 
-        department: req.body.department,
+        if (appointmentExists) {
+            return res.status(400).json({
+                message: "This appointment date and time is already booked."
+            });
+        }
 
-        date: req.body.date,
+        // Update the appointment
+        const updatedAppointment = await Appointment.findByIdAndUpdate(
+            req.params.id,
+            {
+                name: req.body.name,
+                department: req.body.department,
+                date: req.body.date,
+                time: req.body.time
+            },
+            { new: true }
+        );
 
-        time: req.body.time
+        // Check whether the appointment actually exists
+        if (!updatedAppointment) {
+            return res.status(404).json({
+                message: "Appointment not found."
+            });
+        }
 
-    },
-
-    { new: true }
-
-    );
-
-    if (!updatedAppointment) {
-
-    return res.status(404).json({
-
-    message: "Appointment not found."
-
-    });
-
-    }
-
-    res.json({
-
-    message: "Appointment updated successfully!",
-
-    appointment: updatedAppointment
-
-    });
+        res.json({
+            message: "Appointment updated successfully!",
+            appointment: updatedAppointment
+        });
 
     } catch (error) {
 
-    console.log(error);
+        console.log(error);
 
-    res.status(500).json({
-
-    message: "Failed to update appointment."
-
-    });
-
+        res.status(500).json({
+            message: "Failed to update appointment."
+        });
     }
+});
 
-    });
 
 // connect to MongoDB using the connection string from the .env file
 mongoose.connect(process.env.MONGODB_URI)
