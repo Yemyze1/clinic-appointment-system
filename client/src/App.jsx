@@ -10,13 +10,23 @@ function App() {
   const [message, setMessage] = useState("");
   const [appointments, setAppointments] = useState([]);
 
-    function loadAppointments() {
-     fetch("http://localhost:5000/appointments")
-      .then((response) => response.json())
-      .then((data) => { console.log(data);
-        setAppointments(data);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  function loadAppointments() {
+    fetch(`${API_URL}/appointments`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load appointments");
+        }
+        return data;
+      })
+      .then((data) => setAppointments(data))
+      .catch((error) => {
+        console.warn("[v0] Failed to load appointments:", error);
+        setMessage("Unable to connect to the appointment service.");
       });
-  };
+  }
 
 useEffect(() => { 
   loadAppointments();
@@ -35,7 +45,7 @@ useEffect(() => {
     };
     
     
-    fetch("http://localhost:5000/appointments", {
+    fetch(`${API_URL}/appointments`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -67,18 +77,27 @@ useEffect(() => {
 
   };
 
-  })};
+  })
+  .catch((error) => {
+    console.warn("[v0] Failed to book appointment:", error);
+    setMessage("Unable to connect to the appointment service.");
+  });
+  }
 
 // handles the deletion of an appointment by its ID
   function handleDelete(id) {
 
-  fetch(`http://localhost:5000/appointments/${id}`, {
+  fetch(`${API_URL}/appointments/${id}`, {
     method: "DELETE",
   })
     .then((response) => response.json())
     .then((data) => {
       setMessage(data.message);
       loadAppointments();
+    })
+    .catch((error) => {
+      console.warn("[v0] Failed to delete appointment:", error);
+      setMessage("Unable to connect to the appointment service.");
     });
 
 }

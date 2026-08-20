@@ -97,29 +97,6 @@ app.post("/appointments", async(req, res) => {
     });
     };
 
-    // Check if the same date and time is already booked
-    const appointmentExists = appointments.find((appointment) => {
-        return (
-            appointment.date === newAppointment.date &&
-        appointment.time === newAppointment.time
-    );
-});
-
-// If that time slot is already taken, do not allow the booking
-if (appointmentExists) {
-    return res.status(400).json({
-        message: "This appointment slot is already booked."
-    });
-}
-
-    // Add the new appointment to the list
-    appointments.push(newAppointment);
-
-    // Tell the client the booking was successful
-    res.status(201).json({
-        message: "Appointment booked successfully!",
-        appointment: newAppointment,
-    });
 }); 
 
 // This route deletes an appointment using the ID in the URL
